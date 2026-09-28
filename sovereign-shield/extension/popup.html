@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:280px;background:#0d0d1a;color:#c8c8e8;font-family:'Segoe UI',system-ui,sans-serif;padding:14px}
+.hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #1e1e3a}
+.icon{font-size:26px}
+.ht{font-size:13px;font-weight:600;color:#fff}
+.hs{font-size:10px;color:#5a5a80;margin-top:2px}
+.srow{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:7px;background:#111128;border:1px solid #1e1e3a;margin-bottom:10px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot.on{background:#00cc66;box-shadow:0 0 6px #00cc66}
+.dot.off{background:#ff4466}
+.st{font-size:11px;color:#9090b0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.card{background:#111128;border-radius:7px;padding:10px;text-align:center;border:1px solid #1e1e3a}
+.cn{font-size:20px;font-weight:700}
+.cl{font-size:9px;color:#5a5a80;margin-top:2px}
+.model{background:#111128;border-radius:7px;padding:9px 12px;font-size:11px;color:#5a5a80;border:1px solid #1e1e3a;margin-bottom:10px}
+.model strong{color:#a855f7}
+.btn{display:block;width:100%;padding:9px;background:#1e1e3a;border:1px solid #2e2e5a;border-radius:7px;color:#a0a0ff;font-size:11px;cursor:pointer;text-align:center;text-decoration:none;transition:background .15s}
+.btn:hover{background:#2a2a4a}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="icon">🛡️</div>
+  <div><div class="ht">Sovereign Shield</div><div class="hs">AI privacy firewall</div></div>
+</div>
+<div class="srow">
+  <div class="dot" id="dot"></div>
+  <div class="st" id="st">Checking proxy…</div>
+</div>
+<div class="grid">
+  <div class="card"><div class="cn" id="ic" style="color:#ff4466">—</div><div class="cl">Intercepted</div></div>
+  <div class="card"><div class="cn" id="pc" style="color:#00cc66">—</div><div class="cl">Passed</div></div>
+</div>
+<div class="model">Local model: <strong id="model">loading…</strong></div>
+<a class="btn" href="http://localhost:3334" target="_blank">📊 Open live dashboard →</a>
+
+<script src="popup.js"></script>
+</body>
+</html>

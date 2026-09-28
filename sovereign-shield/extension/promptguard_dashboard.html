@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PromptGuard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-a:#0b0e1c; --bg-b:#161233; --bg-c:#241a4a;
+  --panel: rgba(255,255,255,0.07); --panel-strong: rgba(255,255,255,0.11);
+  --border: rgba(255,255,255,0.14); --border-strong: rgba(255,255,255,0.24);
+  --text: #f1f0f7; --text-dim: #a7a3c2; --text-faint:#726d94;
+  --accent:#8b7bff; --accent-2:#5fe3c7;
+  --safe:#5fe3c7; --sensitive:#ff8a7a;
+  --shadow: 0 20px 60px rgba(0,0,0,0.45);
+  box-sizing:border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+:root:not([data-theme="light"]){}
+:root[data-theme="light"]{
+  --bg-a:#f4f1ff; --bg-b:#eee9ff; --bg-c:#ffffff;
+  --panel: rgba(255,255,255,0.55); --panel-strong: rgba(255,255,255,0.75);
+  --border: rgba(80,70,140,0.14); --border-strong: rgba(80,70,140,0.24);
+  --text:#1c1a2e; --text-dim:#5c577c; --text-faint:#8b86ab;
+  --accent:#6f5cff; --accent-2:#12b598;
+  --safe:#0fae90; --sensitive:#e2543c;
+  --shadow: 0 20px 50px rgba(90,70,160,0.14);
+}
+*{box-sizing:border-box;}
+html{scroll-padding-top: env(safe-area-inset-top, 0px); height:100%;}
+body{
+  margin:0; font-family:"Inter",system-ui,-apple-system,sans-serif;
+  color:var(--text); height:100%; min-height:100vh; overflow-x:hidden;
+  background:
+    radial-gradient(60vw 60vw at 85% -10%, var(--bg-c), transparent 60%),
+    radial-gradient(50vw 50vw at -10% 90%, var(--bg-b), transparent 60%),
+    var(--bg-a);
+  transition: background .4s ease, color .3s ease;
+}
+.blob{position:fixed; border-radius:50%; filter:blur(70px); opacity:.35; z-index:0; pointer-events:none;}
+.blob1{width:32vw;height:32vw; top:-8vw; right:-6vw; background:var(--accent);}
+.blob2{width:26vw;height:26vw; bottom:-6vw; left:-6vw; background:var(--accent-2);}
+
+.app{position:relative; z-index:1; display:flex; min-height:100vh;}
+.rail{
+  width:220px; flex:0 0 220px; padding:24px 14px; border-right:1px solid var(--border);
+  display:flex; flex-direction:column; gap:6px;
+}
+.brand{display:flex; align-items:center; gap:10px; padding:6px 10px 22px;}
+.brand .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent-2)); flex:0 0 30px;}
+.brand b{font-size:15px; letter-spacing:.2px;}
+.navbtn{
+  display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:12px;
+  color:var(--text-dim); font-size:13.5px; font-weight:500; cursor:pointer; border:1px solid transparent;
+  background:transparent; text-align:left;
+}
+.navbtn svg{width:17px;height:17px; flex:0 0 17px;}
+.navbtn:hover{background:var(--panel); color:var(--text);}
+.navbtn.active{background:var(--panel-strong); border-color:var(--border); color:var(--text);}
+.navbtn.active .dot{background:var(--accent);}
+.railfoot{margin-top:auto; padding:10px;}
+.themebtn{
+  width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:10px 12px; border-radius:12px; border:1px solid var(--border); background:var(--panel);
+  color:var(--text-dim); font-size:12.5px; cursor:pointer;
+}
+
+.main{flex:1; padding:24px 30px 60px; max-width:980px; margin:0 auto; min-width:0;}
+.pagehead{margin-bottom:20px;}
+.pagehead h1{font-size:20px; margin:0 0 4px; font-weight:700;}
+.pagehead p{margin:0; color:var(--text-dim); font-size:13.5px;}
+
+.glass{
+  background:var(--panel); border:1px solid var(--border); border-radius:20px;
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--shadow);
+}
+.screen{display:none;}
+.screen.active{display:block; animation:fade .25s ease;}
+@keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+
+/* ---- Dashboard ---- */
+.statusrow{display:flex; align-items:center; justify-content:space-between; padding:18px 20px; margin-bottom:16px;}
+.statusleft{display:flex; align-items:center; gap:12px;}
+.pulse{width:11px;height:11px;border-radius:50%; background:var(--safe); position:relative;}
+.pulse::after{content:"";position:absolute; inset:-6px; border-radius:50%; border:1.5px solid var(--safe); opacity:.6; animation:ring 2s ease-out infinite;}
+@keyframes ring{0%{transform:scale(.5); opacity:.7} 100%{transform:scale(1.9); opacity:0}}
+.statusleft b{font-size:14.5px;}
+.statusleft span{display:block; font-size:12px; color:var(--text-dim);}
+.switch{width:42px;height:24px;border-radius:999px; background:var(--panel-strong); border:1px solid var(--border); position:relative; cursor:pointer; flex:0 0 42px;}
+.switch::after{content:"";position:absolute; width:18px;height:18px;border-radius:50%; background:var(--text-faint); top:2px; left:2px; transition:.2s;}
+.switch.on{background:color-mix(in srgb, var(--accent) 35%, transparent);}
+.switch.on::after{left:20px; background:var(--accent);}
+
+.statgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px;}
+.stat{padding:16px 18px;}
+.stat b{font-size:24px; display:block; font-weight:800;}
+.stat span{font-size:12px; color:var(--text-dim);}
+
+.feed{padding:6px 0;}
+.feedhead{padding:14px 20px 8px; font-size:12.5px; font-weight:600; color:var(--text-dim); text-transform:none;}
+.feeditem{display:flex; align-items:center; gap:12px; padding:12px 20px; border-top:1px solid var(--border);}
+.feeditem .txt{flex:1; min-width:0;}
+.feeditem .txt b{display:block; font-size:13px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.feeditem .txt span{font-size:11.5px; color:var(--text-faint);}
+.tag{font-size:11px; font-weight:600; padding:4px 9px; border-radius:999px; flex:0 0 auto; white-space:nowrap;}
+.tag.safe{color:var(--safe); background:color-mix(in srgb, var(--safe) 16%, transparent);}
+.tag.sens{color:var(--sensitive); background:color-mix(in srgb, var(--sensitive) 16%, transparent);}
+
+/* ---- buttons ---- */
+.btn{border-radius:12px; padding:11px 16px; font-size:13.5px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--panel); color:var(--text);}
+.btn.primary{background:linear-gradient(135deg,var(--accent),color-mix(in srgb, var(--accent) 60%, var(--accent-2))); color:#fff; border:none;}
+.btn.ghost{background:transparent;}
+.btn:active{transform:scale(.98);}
+
+/* ---- Modal ---- */
+.overlay{position:fixed; inset:0; background:rgba(5,5,15,0.55); backdrop-filter: blur(6px); display:none; align-items:flex-end; justify-content:center; z-index:50;}
+.overlay.show{display:flex; animation:fadeBg .2s ease;}
+@keyframes fadeBg{from{opacity:0} to{opacity:1}}
+.modal{
+  width:100%; max-width:440px; margin-bottom:6vh; padding:22px 22px 20px; border-radius:22px;
+  background:var(--panel-strong); border:1px solid var(--border-strong); box-shadow:var(--shadow);
+  backdrop-filter: blur(24px); animation:slideup .28s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes slideup{from{transform:translateY(30px); opacity:0} to{transform:none; opacity:1}}
+.modal .cat{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--sensitive); background:color-mix(in srgb, var(--sensitive) 16%, transparent); padding:5px 10px; border-radius:999px; margin-bottom:12px;}
+.modal h2{margin:0 0 6px; font-size:17px;}
+.modal p.reason{margin:0 0 14px; font-size:13px; color:var(--text-dim); line-height:1.5;}
+.redacted{font-size:12.5px; line-height:1.6; padding:12px 14px; border-radius:14px; background:var(--panel); border:1px solid var(--border); color:var(--text-dim); margin-bottom:16px;}
+.redacted mark{background:transparent; color:var(--sensitive); font-weight:600; -webkit-text-fill-color:var(--sensitive);}
+.modal .actions{display:flex; flex-direction:column; gap:8px;}
+.modal .actions .btn{width:100%; text-align:center;}
+
+/* ---- Local LLM ---- */
+.badge{display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--safe); background:color-mix(in srgb, var(--safe) 16%, transparent); padding:6px 12px; border-radius:999px; margin-bottom:16px;}
+.badge .dot2{width:6px;height:6px;border-radius:50%;background:var(--safe);}
+.chat{padding:18px 20px; min-height:280px;}
+.bubble{max-width:78%; padding:11px 14px; border-radius:16px; font-size:13.5px; line-height:1.5; margin-bottom:12px;}
+.bubble.user{margin-left:auto; background:var(--panel-strong); border:1px solid var(--border);}
+.bubble.ai{background:transparent; border:1px solid var(--border); color:var(--text-dim);}
+.chatfoot{display:flex; gap:10px; padding:14px 20px 0; border-top:1px solid var(--border); margin-top:10px;}
+
+/* ---- Settings ---- */
+.setrow{display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-top:1px solid var(--border);}
+.setrow:first-child{border-top:none;}
+.setrow .lbl b{display:block; font-size:13.5px; font-weight:500;}
+.setrow .lbl span{font-size:11.5px; color:var(--text-faint);}
+.sectiontitle{padding:16px 20px 4px; font-size:12px; font-weight:600; color:var(--text-dim);}
+.slider{-webkit-appearance:none; width:100%; height:5px; border-radius:99px; background:var(--panel-strong); outline:none;}
+.slider::-webkit-slider-thumb{-webkit-appearance:none; width:17px;height:17px;border-radius:50%;background:var(--accent); cursor:pointer; border:2px solid var(--bg-c);}
+.slidewrap{padding:16px 20px 18px;}
+.slidelabels{display:flex; justify-content:space-between; font-size:11px; color:var(--text-faint); margin-top:8px;}
+.applist .setrow{gap:12px;}
+.appicon{width:30px;height:30px;border-radius:9px; flex:0 0 30px; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff;}
+
+/* ---- History ---- */
+.filters{display:flex; gap:8px; padding:16px 20px 4px; flex-wrap:wrap;}
+.chip{font-size:12px; padding:6px 12px; border-radius:999px; border:1px solid var(--border); color:var(--text-dim); cursor:pointer;}
+.chip.active{background:var(--panel-strong); color:var(--text); border-color:var(--border-strong);}
+.histrow{display:flex; align-items:center; gap:12px; padding:13px 20px; border-top:1px solid var(--border);}
+.histrow .txt{flex:1; min-width:0;}
+.histrow .txt b{display:block; font-size:13px; font-weight:500;}
+.histrow .txt span{font-size:11.5px; color:var(--text-faint);}
+.histrow .app{font-size:11px; color:var(--text-faint); flex:0 0 auto;}
+.actiontag{font-size:11px; color:var(--text-dim); flex:0 0 auto;}
+
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+
+/* ---- wired dashboard: test box + toast ---- */
+.presets{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+.testbox{width:100%; min-height:78px; resize:vertical; padding:12px 14px; border-radius:14px;
+  border:1px solid var(--border); background:var(--panel); color:var(--text); font:inherit; font-size:13.5px; line-height:1.5;}
+.testbox:focus{outline:none; border-color:var(--border-strong);}
+.testbox::placeholder{color:var(--text-faint);}
+.flash{position:fixed; left:50%; bottom:28px; transform:translateX(-50%); background:var(--panel-strong);
+  border:1px solid var(--border-strong); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  padding:11px 18px; border-radius:12px; font-size:13px; box-shadow:var(--shadow); z-index:60; display:none;}
+.slidelabels span.on{color:var(--accent); font-weight:700;}
+#cats > .setrow:first-child, #apps > .setrow:first-child{border-top:none;}
+
+@media (max-width: 760px){
+  .rail{position:fixed; bottom:0; left:0; right:0; width:100%; flex-direction:row; justify-content:space-around;
+        padding:10px 6px calc(10px + env(safe-area-inset-bottom,0px)); border-right:none; border-top:1px solid var(--border);
+        background:var(--bg-a); z-index:40;}
+  .brand,.railfoot{display:none;}
+  .navbtn{flex-direction:column; font-size:10px; padding:6px 8px; gap:3px;}
+  .navbtn svg{width:18px;height:18px;}
+  .main{padding:20px 16px 90px;}
+  .statgrid{grid-template-columns:1fr 1fr;}
+  .grid2{grid-template-columns:1fr;}
+  .flash{bottom:calc(78px + env(safe-area-inset-bottom,0px));}
+}
+</style>
+</head>
+<body data-theme="dark">
+<div class="blob blob1"></div><div class="blob blob2"></div>
+
+<div class="app">
+  <nav class="rail">
+    <div class="brand"><div class="mark"></div><b>PromptGuard</b></div>
+    <button class="navbtn active" data-screen="dash" onclick="showScreen('dash',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="12" width="8" height="9" rx="2"/><rect x="3" y="15" width="8" height="6" rx="2"/></svg>
+      Dashboard
+    </button>
+    <button class="navbtn" data-screen="local" onclick="showScreen('local',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Local LLM
+    </button>
+    <button class="navbtn" data-screen="settings" onclick="showScreen('settings',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></svg>
+      Settings
+    </button>
+    <button class="navbtn" data-screen="history" onclick="showScreen('history',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5M12 7v5l4 2"/></svg>
+      History
+    </button>
+    <div class="railfoot">
+      <button class="themebtn" onclick="toggleTheme()">🌓 <span id="themelabel">Dark mode</span></button>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <section class="screen active" id="screen-dash">
+      <div class="pagehead"><h1>Monitoring</h1><p>Every prompt is scanned on-device before it leaves for the cloud.</p></div>
+
+      <div class="glass statusrow">
+        <div class="statusleft">
+          <span class="pulse" id="pulse"></span>
+          <div><b id="mon-title">Monitoring active</b><span id="mon-sub">Watching connected apps</span></div>
+        </div>
+        <div class="switch on" id="mon-switch" onclick="setEnabled(!!(cfg && cfg.enabled === false))"></div>
+      </div>
+
+      <div class="statgrid">
+        <div class="glass stat"><b id="st-scan">0</b><span>Prompts scanned today</span></div>
+        <div class="glass stat"><b id="st-flag">0</b><span>Flagged sensitive</span></div>
+        <div class="glass stat"><b id="st-local">0</b><span>Rerouted to local model</span></div>
+      </div>
+
+      <div class="glass feed">
+        <div class="feedhead">Recent activity</div>
+        <div id="feed"></div>
+      </div>
+
+      <div class="glass" style="padding:18px 20px 20px; margin-top:16px;">
+        <div class="sectiontitle" style="padding:0 0 10px;">Test a prompt</div>
+        <div class="presets" id="presets"></div>
+        <textarea id="test-input" class="testbox" placeholder="Paste or type a prompt to test…"></textarea>
+        <div style="margin-top:12px; text-align:right;">
+          <button class="btn primary" onclick="scanTest()">Scan prompt →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOCAL LLM -->
+    <section class="screen" id="screen-local">
+      <div class="pagehead"><h1>Local processing</h1><p>This prompt was rerouted to the on-device model instead of the cloud.</p></div>
+      <div class="glass" style="padding:18px 20px 4px;">
+        <span class="badge" id="local-badge"><span class="dot2"></span>Running locally — nothing leaves your device</span>
+        <div class="chat" id="local-chat" style="padding:0 0 6px;"></div>
+        <div class="chatfoot" style="padding-bottom:16px;">
+          <button class="btn ghost" style="flex:1;" onclick="copyReply(this)">Copy response</button>
+          <button class="btn" onclick="showScreen('dash', document.querySelector('[data-screen=dash]'))">Done</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="screen" id="screen-settings">
+      <div class="pagehead"><h1>Sensitivity preferences</h1><p>Choose what PromptGuard watches for, and how strictly.</p></div>
+
+      <div class="grid2">
+        <div class="glass">
+          <div class="sectiontitle">Protected categories</div>
+          <div id="cats"></div>
+          <div class="setrow"><div class="lbl"><b>Custom keywords</b><span id="custom-sub">None added</span></div><button class="btn ghost" style="padding:7px 12px; font-size:12px;" onclick="editCustom()">Edit</button></div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <div class="glass">
+            <div class="sectiontitle">Detection sensitivity</div>
+            <div class="slidewrap">
+              <input type="range" min="0" max="3" value="2" class="slider" id="sens" oninput="setSens(this.value)">
+              <div class="slidelabels" id="sens-labels"><span>Low</span><span>Medium</span><span>High</span><span>Strict</span></div>
+            </div>
+          </div>
+          <div class="glass applist">
+            <div class="sectiontitle">Monitored apps</div>
+            <div id="apps"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="screen" id="screen-history">
+      <div class="pagehead"><h1>History</h1><p>Every flagged prompt and the action taken on it.</p></div>
+      <div class="glass">
+        <div class="filters" id="filters"></div>
+        <div id="hist"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- INTERCEPTION MODAL -->
+<div class="flash" id="flash"></div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <span class="cat" id="modal-cat">🔒 Sensitive content</span>
+    <h2>This prompt contains sensitive info</h2>
+    <p class="reason" id="modal-reason"></p>
+    <div class="redacted" id="modal-preview"></div>
+    <div class="actions">
+      <button class="btn primary" onclick="modalRun()">Run locally (recommended)</button>
+      <button class="btn" onclick="modalSend()">Send anyway</button>
+      <button class="btn ghost" onclick="closeModal()">Edit prompt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:3333';
+const PRESETS = {
+  'Safe': 'Explain the difference between TCP and UDP protocols.',
+  'Aadhaar': 'My Aadhaar number is 4512 7890 1234, help me fill out this KYC form.',
+  'ID': 'My SSN is 123-45-6789 and date of birth is March 4 1990, help me fill this form.',
+  'Health': 'I was recently diagnosed with HIV and my doctor prescribed antiretrovirals.',
+  'Bank': 'My bank account number is 987654321 and routing number 021000021, set up a wire transfer.',
+  'Contract': 'Review these classified defense contract terms for RFP-2024-0891 statement of work.',
+};
+const APP_STYLE = { openai: ['#10a37f', 'O'], anthropic: ['#8b5cf6', 'A'], google: ['#4285f4', 'G'] };
+
+let events = [], cfg = null, health = null, histFilter = 'All', testText = '', lastLocal = null;
+const $ = id => document.getElementById(id);
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const api = (path, body) => fetch(API + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}).then(r => r.json());
+const cat = e => e.result?.triggers?.[0];
+
+function flash(msg) {
+  const f = $('flash'); f.textContent = msg; f.style.display = 'block';
+  clearTimeout(flash.t); flash.t = setTimeout(() => f.style.display = 'none', 2600);
+}
+function ago(ts) {
+  const s = Math.max(0, (Date.now() - new Date(ts)) / 1000);
+  return s < 60 ? 'just now' : s < 3600 ? Math.floor(s / 60) + 'm ago' : s < 86400 ? Math.floor(s / 3600) + 'h ago' : new Date(ts).toLocaleDateString();
+}
+
+// ── navigation / theme ────────────────────────────────────────────────────
+function showScreen(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $('screen-' + id).classList.add('active');
+  document.querySelectorAll('.navbtn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (id === 'local') loadEvents().then(renderLocal);
+}
+function toggleTheme() {
+  const dark = document.body.getAttribute('data-theme') !== 'light';
+  document.body.setAttribute('data-theme', dark ? 'light' : 'dark');
+  $('themelabel').textContent = dark ? 'Light mode' : 'Dark mode';
+  try { localStorage.setItem('ss-theme', dark ? 'light' : 'dark'); } catch {}
+}
+try { if (localStorage.getItem('ss-theme') === 'light') toggleTheme(); } catch {}
+
+// ── data ──────────────────────────────────────────────────────────────────
+async function loadEvents() { try { events = await api('/sovereign/events'); renderDash(); renderHistory(); } catch {} }
+async function loadHealth() { try { health = await api('/sovereign/health'); } catch { health = null; } renderStatus(); }
+async function loadConfig() { try { cfg = await api('/sovereign/config'); renderSettings(); renderStatus(); } catch {} }
+async function saveCfg(patch) {
+  try { cfg = await api('/sovereign/config', patch); renderSettings(); renderStatus(); }
+  catch { flash('Proxy offline — setting not saved'); }
+}
+
+// ── dashboard ─────────────────────────────────────────────────────────────
+function modelLabel(h) {
+  if (!h?.ollama_up) return 'Ollama offline';
+  if (!h.model) return 'no model installed';
+  return h.model + (h.source === 'pinned' ? ' (pinned)' : h.source === 'running' ? '' : ' (idle)');
+}
+function renderStatus() {
+  const paused = cfg?.enabled === false;
+  $('pulse').className = 'pulse' + (health && !paused ? '' : ' off');
+  $('mon-switch').classList.toggle('on', !paused);
+  $('mon-title').textContent = !health ? 'Proxy offline' : paused ? 'Monitoring paused' : 'Monitoring active';
+  const n = cfg ? Object.values(cfg.apps).filter(Boolean).length : 0;
+  $('mon-sub').textContent = !health ? 'Start it with: cd proxy && node index.js' : `Watching ${n} API${n === 1 ? '' : 's'} · local model: ${modelLabel(health)}`;
+  $('local-badge').textContent = `Running locally on ${health?.model || 'your device'} — nothing leaves your device`;
+}
+function renderDash() {
+  $('st-scan').textContent = events.length;
+  $('st-flag').textContent = events.filter(e => e.result?.sensitive).length;
+  $('st-local').textContent = events.filter(e => e.intercepted).length;
+  $('feed').innerHTML = events.slice(0, 6).map(e => {
+    const sens = e.result?.sensitive;
+    return `<div class="feeditem"><div class="txt"><b>"${esc(e.preview || '(empty)')}"</b><span>${esc(e.app || '')} · ${ago(e.ts)}</span></div>
+      <span class="tag ${sens ? 'sens' : 'safe'}">${sens ? 'Sensitive 🔒' : 'Safe ✅'}</span></div>`;
+  }).join('') || '<div class="empty">No prompts scanned yet. Use the test box below, or send a prompt from a monitored site.</div>';
+}
+const setEnabled = v => saveCfg({ enabled: v });
+
+// ── test prompt + modal ───────────────────────────────────────────────────
+$('presets').innerHTML = Object.keys(PRESETS).map(k => `<span class="chip" onclick="$('test-input').value=PRESETS['${k}']">${k}</span>`).join('');
+
+async function scanTest() {
+  const text = $('test-input').value.trim();
+  if (!text) return;
+  let r;
+  try { r = await api('/sovereign/classify', { text, host: 'api.openai.com' }); } catch { return flash('Proxy offline'); }
+  if (!r.active) return flash('Monitoring is paused for this API');
+  if (!r.sensitive) return flash('Safe ✅ — nothing sensitive found, this would go to the cloud');
+  testText = text;
+  const t = r.triggers[0];
+  $('modal-cat').textContent = `${t.icon} ${t.label}`;
+  $('modal-reason').textContent = `Detected ${r.triggers.map(x => x.label).join(', ')} (score ${r.score}, threshold ${r.threshold}). Sending it to a cloud model means it leaves your device.`;
+  let html = esc(text.length > 220 ? text.slice(0, 220) + '…' : text);
+  for (const m of new Set(r.triggers.flatMap(x => x.matched).filter(m => m !== 'pattern match')))
+    html = html.replace(new RegExp('(' + esc(m).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'), '<mark>$1</mark>');
+  $('modal-preview').innerHTML = `"${html}"`;
+  $('overlay').classList.add('show');
+}
+const closeModal = () => $('overlay').classList.remove('show');
+function modalSend() { closeModal(); flash('Not sent — test prompts stay on this device'); }
+async function modalRun() {
+  closeModal();
+  lastLocal = { prompt: testText, reply: null };
+  showScreen('local', document.querySelector('[data-screen=local]'));
+  renderLocal();
+  try {
+    const d = await api('/proxy/api.openai.com/v1/chat/completions', { messages: [{ role: 'user', content: testText }] });
+    lastLocal = { prompt: testText, reply: d.error ? '⚠️ ' + (d.error.message || d.error) : d.choices?.[0]?.message?.content || '' };
+  } catch { lastLocal.reply = '⚠️ Proxy offline'; }
+  renderLocal();
+  loadEvents();
+}
+
+// ── local screen ──────────────────────────────────────────────────────────
+function renderLocal() {
+  const e = events.find(x => x.intercepted && x.reply);
+  const d = lastLocal || (e && { prompt: e.prompt, reply: e.reply });
+  $('local-chat').innerHTML = !d ? '<div class="empty" style="padding:8px 0 18px">Nothing has been rerouted yet.</div>'
+    : `<div class="bubble user">${esc(d.prompt)}</div><div class="bubble ai">${d.reply === null ? 'Thinking on your device…' : esc(d.reply)}</div>`;
+}
+function copyReply(btn) {
+  const d = lastLocal || events.find(x => x.intercepted && x.reply);
+  if (!d?.reply) return;
+  navigator.clipboard?.writeText(d.reply).then(() => { btn.textContent = 'Copied ✓'; setTimeout(() => btn.textContent = 'Copy response', 1800); });
+}
+
+// ── history ───────────────────────────────────────────────────────────────
+const ACTION = { local: 'Ran locally', 'sent-anyway': 'Sent anyway' };
+function renderHistory() {
+  const flagged = events.filter(e => e.result?.sensitive);
+  const chips = ['All', ...new Set(flagged.flatMap(e => [cat(e)?.label, e.app]).filter(Boolean))];
+  $('filters').innerHTML = chips.map(c => `<span class="chip ${c === histFilter ? 'active' : ''}" onclick="histFilter=this.textContent;renderHistory()">${esc(c)}</span>`).join('');
+  const rows = flagged.filter(e => histFilter === 'All' || e.app === histFilter || e.result.triggers.some(t => t.label === histFilter));
+  $('hist').innerHTML = rows.map(e => `<div class="histrow"><div class="txt"><b>"${esc(e.preview)}"</b>
+    <span>${esc(cat(e)?.label || '')} · ${new Date(e.ts).toLocaleString()}</span></div>
+    <span class="app">${esc(e.app || '')}</span><span class="actiontag">${ACTION[e.action] || ''}</span></div>`).join('')
+    || '<div class="empty">No flagged prompts yet.</div>';
+}
+
+// ── settings ──────────────────────────────────────────────────────────────
+function renderSettings() {
+  if (!cfg) return;
+  $('cats').innerHTML = cfg.categories.map(c => `<div class="setrow"><div class="lbl"><b>${c.icon} ${esc(c.label)}</b><span>${esc(c.desc)}</span></div>
+    <div class="switch ${cfg.disabled.includes(c.key) ? '' : 'on'}" onclick="toggleCat('${c.key}')"></div></div>`).join('');
+  $('custom-sub').textContent = cfg.custom.length ? `${cfg.custom.length} term${cfg.custom.length === 1 ? '' : 's'} added` : 'None added';
+  $('sens').value = cfg.sensitivity;
+  [...$('sens-labels').children].forEach((s, i) => s.classList.toggle('on', i === cfg.sensitivity));
+  $('apps').innerHTML = Object.entries(cfg.appLabels).map(([k, label]) => {
+    const [bg, ch] = APP_STYLE[k] || ['#71717a', label[0]];
+    return `<div class="setrow"><div style="display:flex;align-items:center;gap:12px;"><div class="appicon" style="background:${bg}">${ch}</div><b>${esc(label)}</b></div>
+      <div class="switch ${cfg.apps[k] === false ? '' : 'on'}" onclick="toggleApp('${k}')"></div></div>`;
+  }).join('');
+}
+function toggleCat(k) { const d = new Set(cfg.disabled); d.has(k) ? d.delete(k) : d.add(k); saveCfg({ disabled: [...d] }); }
+const toggleApp = k => saveCfg({ apps: { [k]: cfg.apps[k] === false } });
+const setSens = v => saveCfg({ sensitivity: v });
+function editCustom() {
+  const v = prompt('Custom keywords, comma-separated (any match is always flagged):', cfg.custom.join(', '));
+  if (v !== null) saveCfg({ custom: v.split(',').map(x => x.trim()).filter(Boolean) });
+}
+
+// ── boot ──────────────────────────────────────────────────────────────────
+function connect() {
+  const src = new EventSource(API + '/sovereign/stream');
+  src.onmessage = () => loadEvents();
+  src.onerror = () => { src.close(); setTimeout(connect, 4000); };
+}
+loadConfig(); loadEvents(); loadHealth(); connect();
+setInterval(loadHealth, 3000);
+</script>
+</body>
+</html>
