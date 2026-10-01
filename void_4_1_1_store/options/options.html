@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Void settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+<div class="ambient-glow glow-top-left" aria-hidden="true"></div>
+<div class="ambient-glow glow-mid-right" aria-hidden="true"></div>
+<div class="ambient-glow glow-bottom-left" aria-hidden="true"></div>
+<main>
+  <header>
+    <div class="avatar" id="avatarLogo" aria-label="Void" aria-hidden="true">
+      <div class="eye"></div>
+      <div class="eye"></div>
+    </div>
+    <div>
+      <h1>Void settings</h1>
+      <p class="muted">Everything runs on your device. Nothing here is sent to us.</p>
+    </div>
+  </header>
+
+  <section>
+    <h2>What Void protects</h2>
+    <p class="muted">Turn off any kind of data you don't want Void to look for.</p>
+    <div id="categories"></div>
+  </section>
+
+  <section>
+    <h2>File uploads</h2>
+    <div class="item">
+      <div><label for="uploadGate" class="name">Check files before upload</label>
+        <div class="hint">Covers the file picker, drag and drop, and pasted files</div></div>
+      <label class="switch"><input id="uploadGate" type="checkbox"><span></span></label>
+    </div>
+    <div class="item">
+      <div><label for="stripImageMetadata" class="name">Remove photo metadata</label>
+        <div class="hint">Strips location and camera details from JPEG, PNG and WebP images</div></div>
+      <label class="switch"><input id="stripImageMetadata" type="checkbox"><span></span></label>
+    </div>
+    <div class="item">
+      <div><label for="alwaysAsk" class="name">Ask before every upload</label>
+        <div class="hint">Off: Void only asks when it finds something, or when it can't check with Ollama. On: you choose every time.</div></div>
+      <label class="switch"><input id="alwaysAsk" type="checkbox"><span></span></label>
+    </div>
+    <div class="item">
+      <div><label for="strictMode" class="name">Also ask about files Void can't read</label>
+        <div class="hint">Videos, archives, and images when no vision model is set. Off: they upload with a note.</div></div>
+      <label class="switch"><input id="strictMode" type="checkbox"><span></span></label>
+    </div>
+    <p class="muted">Without Ollama running, Void asks you to upload or block every file. With Ollama, it reads the file's content and asks only when something is found. Scanned PDFs and old .doc, .xls and .ppt files can't be read locally, so Void always asks before they upload.</p>
+  </section>
+
+  <section>
+    <h2>Local AI</h2>
+    <p class="muted">Void always runs its pattern scan. An AI model adds a second opinion on documents and images, and it runs on your computer.</p>
+
+    <div class="item">
+      <div><label for="engine" class="name">AI engine</label>
+        <div class="hint">Automatic tries Ollama first, then Chrome's built-in AI</div></div>
+      <select id="engine">
+        <option value="auto">Automatic</option>
+        <option value="ollama">Ollama</option>
+        <option value="chrome">Chrome built-in AI</option>
+        <option value="rules">Pattern scan only</option>
+      </select>
+    </div>
+
+    <div id="ollamaBox">
+      <div class="field"><label for="ollamaUrl">Ollama address</label>
+        <input id="ollamaUrl" type="url" spellcheck="false" placeholder="http://127.0.0.1:11434"></div>
+      
+      <div class="field">
+        <div class="field-head">
+          <label for="textModel">Text model</label>
+          <span id="textModelBadge" class="badge"></span>
+        </div>
+        <select id="textModel"></select>
+        <div id="textModelStatus" class="compat-indicator"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-head">
+          <label for="visionModel">Image model (optional)</label>
+          <span id="visionModelBadge" class="badge"></span>
+        </div>
+        <select id="visionModel"></select>
+        <div class="hint">Vision models need roughly 8 GB of free memory. Leave this empty on lighter machines.</div>
+        <div id="visionModelStatus" class="compat-indicator"></div>
+      </div>
+
+      <div class="item">
+        <div><label for="autoModel" class="name">Use another installed model if needed</label>
+          <div class="hint">If the chosen model is missing or can't run Void's check, Void tests your other installed models and uses the best one that works. If none work, you are told why.</div></div>
+        <label class="switch"><input id="autoModel" type="checkbox"><span></span></label>
+      </div>
+
+      <div class="actions">
+        <button id="test" type="button" class="primary">Save and test connection</button>
+        <button id="checkCompat" type="button">Check Model Compatibility</button>
+        <button id="scanModels" type="button">Scan all installed models</button>
+        <span id="testResult" role="status"></span>
+      </div>
+      <div id="compatReport" class="compat-card" hidden></div>
+      <p id="remoteWarn" class="warn" hidden>This address is not on your computer. Documents and images will be sent to that machine for checking.</p>
+
+      <details>
+        <summary>Set up Ollama</summary>
+        <p class="muted">1. Install Ollama from ollama.com, then run <code>ollama pull llama3.2:3b</code>.</p>
+        <p class="muted">2. Void asks Chrome to present itself to Ollama the way Ollama expects, so this usually just works. If the test says "Ollama blocked the extension" (HTTP 403), set <code>OLLAMA_ORIGINS</code> to <code>chrome-extension://*</code> and restart Ollama:</p>
+        <p class="muted"><b>Windows</b> (Command Prompt): <code>setx OLLAMA_ORIGINS "chrome-extension://*"</code>, then quit and reopen Ollama from the tray.</p>
+        <p class="muted"><b>macOS:</b> <code>launchctl setenv OLLAMA_ORIGINS "chrome-extension://*"</code>, then quit and reopen the Ollama app.</p>
+        <p class="muted"><b>Linux (systemd):</b> run <code>sudo systemctl edit ollama.service</code>, add <code>Environment="OLLAMA_ORIGINS=chrome-extension://*"</code> under <code>[Service]</code>, then <code>sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart ollama</code>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <h2>Supported sites</h2>
+    <div class="chips"><span>ChatGPT</span><span>Gemini</span><span>Claude</span></div>
+    <p class="muted">Sites change their layout from time to time, so Void may need an update when they do.</p>
+  </section>
+
+  <section>
+    <h2>Activity</h2>
+    <p class="muted" id="activity">Nothing checked yet.</p>
+    <div class="actions"><button id="resetStats" type="button">Reset counters</button></div>
+    <p class="muted">Void keeps counts only, never the values it found.</p>
+  </section>
+
+  <div id="saved" role="status">Saved</div>
+</main>
+<script src="../src/detectors.js"></script>
+<script src="options.js"></script>
+</body>
+</html>

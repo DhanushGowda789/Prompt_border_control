@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Void</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <div class="ambient-glow glow-bottom" aria-hidden="true"></div>
+
+  <div class="popup-shell">
+    <header class="motion-item">
+      <div class="avatar" id="avatarLogo" aria-label="Open Settings" role="button" tabindex="0">
+        <div class="eye"></div>
+        <div class="eye"></div>
+      </div>
+      <div class="head-text">
+        <h1>Void</h1>
+        <p id="state">Checking…</p>
+      </div>
+      <span id="dot" class="dot" aria-hidden="true"></span>
+    </header>
+
+    <section class="row motion-item">
+      <div>
+        <label for="enabled" class="name">Protection</label>
+        <div class="hint">Scans prompts and uploads on supported AI sites</div>
+      </div>
+      <label class="switch"><input id="enabled" type="checkbox"><span></span></label>
+    </section>
+
+    <section class="row motion-item" id="siteRow" hidden>
+      <div>
+        <label for="site" class="name" id="siteName">This site</label>
+        <div class="hint">Turn Void off for this site only</div>
+      </div>
+      <label class="switch"><input id="site" type="checkbox"><span></span></label>
+    </section>
+
+    <section class="row motion-item">
+      <div>
+        <label for="mode" class="name">When sensitive data is found</label>
+      </div>
+      <select id="mode">
+        <option value="auto">Redact it</option>
+        <option value="warn">Only warn me</option>
+      </select>
+    </section>
+
+    <section class="engine motion-item" aria-live="polite">
+      <div class="engine-title" id="engineTitle">Local AI</div>
+      <div class="hint" id="engineText">Checking…</div>
+    </section>
+
+    <footer class="motion-item">
+      <span id="stats" class="hint"></span>
+      <button id="options" type="button">Settings</button>
+    </footer>
+  </div>
+
+  <script src="../src/sites.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
